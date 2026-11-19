@@ -29,14 +29,29 @@ searchInput?.addEventListener('input', () => {
 
 document.querySelectorAll('[data-copy]').forEach(button => {
   button.addEventListener('click', async () => {
+    const text = button.dataset.copy.replaceAll('&#10;', '\n');
+    const old = button.textContent;
     try {
-      await navigator.clipboard.writeText(button.dataset.copy.replaceAll('&#10;', '\n'));
-      const old = button.textContent;
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Alternativa compatible con la apertura local del archivo (file://).
+        const temporary = document.createElement('textarea');
+        temporary.value = text;
+        temporary.setAttribute('readonly', '');
+        temporary.style.position = 'fixed';
+        temporary.style.opacity = '0';
+        document.body.appendChild(temporary);
+        temporary.select();
+        const copied = document.execCommand('copy');
+        temporary.remove();
+        if (!copied) throw new Error('No se pudo copiar');
+      }
       button.textContent = '¡Copiado!';
-      setTimeout(() => button.textContent = old, 1400);
     } catch {
-      button.textContent = 'No disponible';
+      button.textContent = 'Selecciona y copia manualmente';
     }
+    setTimeout(() => button.textContent = old, 1800);
   });
 });
 
